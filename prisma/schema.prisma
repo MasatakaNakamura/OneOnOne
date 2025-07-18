@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                String    @id @default(cuid())
+  name              String?
+  email             String    @unique
+  emailVerified     DateTime?
+  image             String?
+  passwordHash      String?
+  role              Role      @default(GENERAL)
+  departmentId      String?
+  clientCompanyName String?
+  supervisorId      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  department   Department? @relation(fields: [departmentId], references: [id])
+  supervisor   User?       @relation("UserSupervisor", fields: [supervisorId], references: [id])
+  subordinates User[]      @relation("UserSupervisor")
+  
+  // 1on1 relationships
+  supervisorOneOnOnes OneOnOne[] @relation("Supervisor")
+  memberOneOnOnes     OneOnOne[] @relation("Member")
+  
+  // Goals and actions
+  goals       Goal[]
+  nextActions NextAction[]
+  minutes     Minutes[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Application models
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+}
+
+model Goal {
+  id          String     @id @default(cuid())
+  userId      String
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  status      GoalStatus @default(DRAFT)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keyResults KeyResult[]
+}
+
+model KeyResult {
+  id           String   @id @default(cuid())
+  goalId       String
+  title        String
+  targetValue  Int
+  currentValue Int
+  unit         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+model OneOnOne {
+  id           String        @id @default(cuid())
+  supervisorId String
+  memberId     String
+  scheduledAt  DateTime
+  status       OneOnOneStatus @default(SCHEDULED)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  supervisor  User         @relation("Supervisor", fields: [supervisorId], references: [id])
+  member      User         @relation("Member", fields: [memberId], references: [id])
+  agendas     Agenda[]
+  minutes     Minutes[]
+  nextActions NextAction[]
+}
+
+model Agenda {
+  id          String   @id @default(cuid())
+  oneOnOneId  String
+  title       String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  oneOnOne OneOnOne @relation(fields: [oneOnOneId], references: [id], onDelete: Cascade)
+}
+
+model Minutes {
+  id         String   @id @default(cuid())
+  oneOnOneId String
+  speakerId  String
+  content    String
+  timestamp  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  oneOnOne OneOnOne @relation(fields: [oneOnOneId], references: [id], onDelete: Cascade)
+  speaker  User     @relation(fields: [speakerId], references: [id])
+}
+
+model NextAction {
+  id          String           @id @default(cuid())
+  oneOnOneId  String
+  userId      String
+  title       String
+  description String?
+  dueDate     DateTime
+  status      NextActionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  oneOnOne OneOnOne @relation(fields: [oneOnOneId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+}
+
+// Enums
+enum Role {
+  GENERAL
+  LEADER
+  MANAGER
+  DIRECTOR
+  EXECUTIVE
+}
+
+enum GoalStatus {
+  DRAFT
+  PENDING_APPROVAL
+  REJECTED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum OneOnOneStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum NextActionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}

@@ -1,0 +1,14 @@
+{
+  "/users/[id]/page": "app/users/[id]/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/goals/page": "app/goals/page.js",
+  "/actions/page": "app/actions/page.js",
+  "/api/actions/route": "app/api/actions/route.js",
+  "/one-on-ones/page": "app/one-on-ones/page.js",
+  "/api/one-on-ones/route": "app/api/one-on-ones/route.js",
+  "/api/goals/route": "app/api/goals/route.js",
+  "/users/page": "app/users/page.js",
+  "/api/users/route": "app/api/users/route.js",
+  "/api/departments/route": "app/api/departments/route.js"
+}
